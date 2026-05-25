@@ -1,13 +1,14 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine, SessionLocal
 import models
 from models import Staff
-from routers import clients, intake_cases, staff, dashboard, insights
+from deps import require_auth
+from routers import auth, clients, intake_cases, staff, dashboard, insights
 
 
 def _db_is_empty() -> bool:
@@ -20,9 +21,7 @@ def _db_is_empty() -> bool:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables
     models.Base.metadata.create_all(bind=engine)
-    # Auto-seed if the database is empty (fresh deploy or ephemeral filesystem reset)
     if _db_is_empty():
         from seed import seed
         seed()
@@ -36,8 +35,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow localhost for dev + any Render/custom frontend via ALLOWED_ORIGINS env var
-_raw = os.environ.get("ALLOWED_ORIGINS", "")
+_raw   = os.environ.get("ALLOWED_ORIGINS", "")
 _extra = [o.strip() for o in _raw.split(",") if o.strip()]
 
 app.add_middleware(
@@ -54,11 +52,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(clients.router,      prefix="/api", tags=["Clients"])
-app.include_router(intake_cases.router, prefix="/api", tags=["Intake Cases"])
-app.include_router(staff.router,        prefix="/api", tags=["Staff"])
-app.include_router(dashboard.router,    prefix="/api", tags=["Dashboard"])
-app.include_router(insights.router,     prefix="/api", tags=["Insights"])
+# Public — no auth required
+app.include_router(auth.router, prefix="/api", tags=["Auth"])
+
+# Protected — all routes require a valid JWT
+_protected = {"dependencies": [Depends(require_auth)]}
+app.include_router(clients.router,      prefix="/api", tags=["Clients"],      **_protected)
+app.include_router(intake_cases.router, prefix="/api", tags=["Intake Cases"], **_protected)
+app.include_router(staff.router,        prefix="/api", tags=["Staff"],        **_protected)
+app.include_router(dashboard.router,    prefix="/api", tags=["Dashboard"],    **_protected)
+app.include_router(insights.router,     prefix="/api", tags=["Insights"],     **_protected)
 
 
 @app.get("/")

@@ -1,16 +1,37 @@
 const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
 
+function getToken() {
+  return localStorage.getItem("cf_token");
+}
+
 async function request(path, options = {}) {
+  const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
     ...options,
   });
+  if (res.status === 401) {
+    localStorage.removeItem("cf_token");
+    window.location.href = "/login";
+    return;
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Request failed" }));
     throw new Error(err.detail || "Request failed");
   }
   return res.status === 204 ? null : res.json();
 }
+
+// Auth
+export const login = (username, password) =>
+  request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
 
 // Clients
 export const getClients = (search = "") =>

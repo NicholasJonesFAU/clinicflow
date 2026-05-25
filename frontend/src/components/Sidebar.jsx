@@ -1,22 +1,27 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  ClipboardList,
-  Users,
-  UserCog,
-  Lightbulb,
-  Activity,
+  LayoutDashboard, ClipboardList, Users,
+  UserCog, Lightbulb, Activity, LogOut,
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const NAV = [
-  { to: "/",              label: "Dashboard",    icon: LayoutDashboard },
-  { to: "/intake-cases",  label: "Intake Cases", icon: ClipboardList },
-  { to: "/clients",       label: "Clients",      icon: Users },
-  { to: "/staff",         label: "Staff",        icon: UserCog },
-  { to: "/insights",      label: "Insights",     icon: Lightbulb },
+  { to: "/",             label: "Dashboard",    icon: LayoutDashboard },
+  { to: "/intake-cases", label: "Intake Cases", icon: ClipboardList },
+  { to: "/clients",      label: "Clients",      icon: Users },
+  { to: "/staff",        label: "Staff",        icon: UserCog },
+  { to: "/insights",     label: "Insights",     icon: Lightbulb },
 ];
 
 export default function Sidebar() {
+  const { logout } = useAuth();
+  const navigate   = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <aside className="w-60 min-h-screen bg-slate-900 flex flex-col shrink-0">
       {/* Logo */}
@@ -52,8 +57,15 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-slate-800">
-        <p className="text-slate-600 text-[10px]">Demo Mode · Fake Data Only</p>
+      <div className="px-3 py-4 border-t border-slate-800 space-y-1">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        >
+          <LogOut size={17} />
+          Sign out
+        </button>
+        <p className="text-slate-600 text-[10px] px-3">Demo Mode · Fake Data Only</p>
       </div>
     </aside>
   );
