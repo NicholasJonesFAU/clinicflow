@@ -1,45 +1,197 @@
 import { useState, useEffect } from "react";
-import { Users } from "lucide-react";
+import { Users, Plus, X, Save } from "lucide-react";
+import { toast } from "sonner";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
-import { getStaff, getIntakeCases } from "../api/client";
+import { getStaff, getIntakeCases, createStaff } from "../api/client";
+
+const INITIAL_STAFF_FORM = {
+  name: "",
+  role: "",
+  email: "",
+  active: true,
+};
 
 export default function Staff() {
   const [staff, setStaff] = useState([]);
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [formError, setFormError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [staffForm, setStaffForm] = useState(INITIAL_STAFF_FORM);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [s, c] = await Promise.all([getStaff(), getIntakeCases()]);
+      setStaff(s);
+      setCases(c);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    Promise.all([getStaff(), getIntakeCases()])
-      .then(([s, c]) => { setStaff(s); setCases(c); })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
+    loadData();
   }, []);
 
-  // Active (non-closed) cases per staff
   const activeCaseCount = cases.filter(c => c.status !== "Closed");
   const totalActive = activeCaseCount.length;
 
   const staffWithCounts = staff.map(s => {
-    const count = activeCaseCount.filter(c => c.assigned_to === s.name).length;
+    const count = activeCaseCount.filter(c => String(c.assigned_to || "") === String(s.id)).length;
     const pct = totalActive > 0 ? Math.round((count / totalActive) * 100) : 0;
     return { ...s, caseCount: count, pct };
   });
+
+  const updateForm = (field, value) => {
+    setStaffForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setStaffForm(INITIAL_STAFF_FORM);
+    setFormError(null);
+    setShowForm(false);
+  };
+
+  const handleCreateStaff = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setFormError(null);
+
+    if (!staffForm.name.trim() || !staffForm.role.trim() || !staffForm.email.trim()) {
+      setFormError("Name, role, and email are required.");
+      setSaving(false);
+      return;
+    }
+
+    try {
+      await createStaff({
+        name: staffForm.name.trim(),
+        role: staffForm.role.trim(),
+        email: staffForm.email.trim(),
+        active: staffForm.active,
+      });
+      toast.success("Staff member created");
+      resetForm();
+      await loadData();
+    } catch (e) {
+      setFormError(e.message);
+      toast.error("Unable to create staff member");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) return <LoadingSpinner message="Loading staff…" />;
   if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-lg m-8">Error: {error}</div>;
 
   return (
     <div className="p-8">
-      <div className="mb-7">
-        <h1 className="text-2xl font-bold text-slate-800">Staff</h1>
-        <p className="text-slate-500 text-sm mt-1">{staff.length} team members</p>
+      <div className="flex items-center justify-between mb-7">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Staff</h1>
+          <p className="text-slate-500 text-sm mt-1">{staff.length} team members</p>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={16} />
+          New Staff Member
+        </button>
       </div>
+
+      {showForm && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-slate-800">Add Staff Member</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Create a demo intake team member.</p>
+            </div>
+            <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
+              <X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleCreateStaff} className="p-6">
+            {formError && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {formError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Name *</label>
+                <input
+                  value={staffForm.name}
+                  onChange={e => updateForm("name", e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Taylor Morgan"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Role *</label>
+                <input
+                  value={staffForm.role}
+                  onChange={e => updateForm("role", e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Intake Coordinator"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Email *</label>
+                <input
+                  type="email"
+                  value={staffForm.email}
+                  onChange={e => updateForm("email", e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="name@clinicflow.demo"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <select
+                  value={staffForm.active ? "active" : "inactive"}
+                  onChange={e => updateForm("active", e.target.value === "active")}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 disabled:opacity-60"
+              >
+                <Save size={15} />
+                {saving ? "Saving…" : "Save Staff"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         {staff.length === 0 ? (
-          <EmptyState title="No staff found" icon={Users} />
+          <EmptyState title="No staff found" icon={Users} message="Add your first intake team member." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -95,7 +247,6 @@ export default function Staff() {
         )}
       </div>
 
-      {/* Unassigned note */}
       {(() => {
         const unassigned = activeCaseCount.filter(c => !c.assigned_to).length;
         return unassigned > 0 ? (

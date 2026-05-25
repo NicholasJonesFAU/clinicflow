@@ -34,6 +34,11 @@ function isStuck(c) {
   return diff > 7;
 }
 
+function staffName(staff, id) {
+  if (!id) return null;
+  return staff.find(s => Number(s.id) === Number(id))?.name || `Staff #${id}`;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState(null);
@@ -42,7 +47,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Filters
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
@@ -57,14 +61,21 @@ export default function Dashboard() {
   }, []);
 
   const filtered = cases.filter(c => {
-    const name = `${c.client?.first_name} ${c.client?.last_name}`.toLowerCase();
+    const name = `${c.client?.first_name || ""} ${c.client?.last_name || ""}`.toLowerCase();
     if (search && !name.includes(search.toLowerCase())) return false;
     if (filterStatus && c.status !== filterStatus) return false;
     if (filterPriority && c.client?.priority_level !== filterPriority) return false;
-    if (filterStaff && c.assigned_to !== filterStaff) return false;
+    if (filterStaff && Number(c.assigned_to) !== Number(filterStaff)) return false;
     if (filterInsurance && c.insurance_status !== filterInsurance) return false;
     return true;
   });
+
+  const goToCases = (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""))
+    ).toString();
+    navigate(`/intake-cases${qs ? `?${qs}` : ""}`);
+  };
 
   if (loading) return <LoadingSpinner message="Loading dashboard…" />;
   if (error) return (
@@ -73,23 +84,20 @@ export default function Dashboard() {
 
   return (
     <div className="p-8">
-      {/* Header */}
       <div className="mb-7">
         <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
         <p className="text-slate-500 text-sm mt-1">Intake operations overview</p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-        <KPICard title="Active Intakes"       value={metrics.total_active}          icon={ClipboardList}  color="blue"   />
-        <KPICard title="Ready to Schedule"    value={metrics.ready_to_schedule}     icon={CalendarCheck}  color="green"  />
-        <KPICard title="Insurance Pending"    value={metrics.insurance_pending}     icon={ShieldCheck}    color="orange" />
-        <KPICard title="Missing Documents"    value={metrics.missing_documents}     icon={FileWarning}    color="amber"  />
-        <KPICard title="High / Urgent"        value={metrics.high_urgent_priority}  icon={AlertTriangle}  color="red"    />
-        <KPICard title="Stuck Over 7 Days"    value={metrics.stuck_over_7_days}     icon={Clock}          color="purple" />
+        <KPICard title="Active Intakes" value={metrics.total_active} icon={ClipboardList} color="blue" onClick={() => goToCases({ active: "true" })} />
+        <KPICard title="Ready to Schedule" value={metrics.ready_to_schedule} icon={CalendarCheck} color="green" onClick={() => goToCases({ status: "Ready to Schedule" })} />
+        <KPICard title="Insurance Pending" value={metrics.insurance_pending} icon={ShieldCheck} color="orange" onClick={() => goToCases({ active: "true", insurance_status: "Pending" })} />
+        <KPICard title="Missing Documents" value={metrics.missing_documents} icon={FileWarning} color="amber" onClick={() => goToCases({ active: "true", flag: "missing_documents" })} />
+        <KPICard title="High / Urgent" value={metrics.high_urgent_priority} icon={AlertTriangle} color="red" onClick={() => goToCases({ active: "true", priority_group: "high_urgent" })} />
+        <KPICard title="Stuck Over 7 Days" value={metrics.stuck_over_7_days} icon={Clock} color="purple" onClick={() => goToCases({ active: "true", flag: "stuck" })} />
       </div>
 
-      {/* Pipeline */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-8">
         <div className="px-6 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-700">Intake Pipeline</h2>
@@ -101,6 +109,8 @@ export default function Dashboard() {
               <button
                 key={s}
                 onClick={() => setFilterStatus(filterStatus === s ? "" : s)}
+                onDoubleClick={() => goToCases({ status: s })}
+                title="Click to filter this dashboard. Double-click to open matching cases."
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${
                   filterStatus === s
                     ? "border-blue-400 bg-blue-50 text-blue-700"
@@ -118,12 +128,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cases Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap gap-3 items-center">
           <h2 className="font-semibold text-slate-700 mr-2">Active Cases</h2>
 
-          {/* Search */}
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
             <input
@@ -133,19 +141,22 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Filters */}
-          {[
-            { val: filterStatus,    set: setFilterStatus,    label: "Status",    opts: STATUSES },
-            { val: filterPriority,  set: setFilterPriority,  label: "Priority",  opts: ["Low","Normal","High","Urgent"] },
-            { val: filterStaff,     set: setFilterStaff,     label: "Staff",     opts: staff.map(s => s.name) },
-            { val: filterInsurance, set: setFilterInsurance, label: "Insurance", opts: ["Not Started","Pending","Verified","Issue Found"] },
-          ].map(({ val, set, label, opts }) => (
-            <select key={label} value={val} onChange={e => set(e.target.value)}
-              className="border border-slate-200 rounded-lg text-sm px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">{label}</option>
-              {opts.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          ))}
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border border-slate-200 rounded-lg text-sm px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Status</option>
+            {STATUSES.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="border border-slate-200 rounded-lg text-sm px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Priority</option>
+            {["Low","Normal","High","Urgent"].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+          <select value={filterStaff} onChange={e => setFilterStaff(e.target.value)} className="border border-slate-200 rounded-lg text-sm px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Staff</option>
+            {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select value={filterInsurance} onChange={e => setFilterInsurance(e.target.value)} className="border border-slate-200 rounded-lg text-sm px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Insurance</option>
+            {["Not Started","Pending","Verified","Issue Found"].map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
 
           {(search || filterStatus || filterPriority || filterStaff || filterInsurance) && (
             <button onClick={() => { setSearch(""); setFilterStatus(""); setFilterPriority(""); setFilterStaff(""); setFilterInsurance(""); }}
@@ -183,7 +194,7 @@ export default function Dashboard() {
                       <td className="px-4 py-3.5"><StatusBadge status={c.status} /></td>
                       <td className="px-4 py-3.5"><PriorityBadge priority={c.client?.priority_level} /></td>
                       <td className="px-4 py-3.5"><InsuranceBadge status={c.insurance_status} /></td>
-                      <td className="px-4 py-3.5 text-slate-500">{c.assigned_to || <span className="text-slate-300 italic">Unassigned</span>}</td>
+                      <td className="px-4 py-3.5 text-slate-500">{staffName(staff, c.assigned_to) || <span className="text-slate-300 italic">Unassigned</span>}</td>
                       <td className="px-4 py-3.5 text-slate-500">
                         {c.next_follow_up_date
                           ? <span className={overdue ? "text-red-600 font-medium" : ""}>{c.next_follow_up_date}</span>
@@ -195,9 +206,7 @@ export default function Dashboard() {
                           {stuck   && <span className="bg-purple-50 text-purple-600 text-xs px-2 py-0.5 rounded-full border border-purple-100 font-medium">Stuck</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-300">
-                        <ChevronRight size={16} />
-                      </td>
+                      <td className="px-4 py-3.5 text-slate-300"><ChevronRight size={16} /></td>
                     </tr>
                   );
                 })}

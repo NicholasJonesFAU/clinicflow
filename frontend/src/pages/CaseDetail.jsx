@@ -26,7 +26,6 @@ export default function CaseDetail() {
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
 
-  // Editable fields
   const [status, setStatus]             = useState("");
   const [assignedTo, setAssignedTo]     = useState("");
   const [insuranceStatus, setInsurance] = useState("");
@@ -42,7 +41,7 @@ export default function CaseDetail() {
         setCaseData(c);
         setStaff(s);
         setStatus(c.status);
-        setAssignedTo(c.assigned_to || "");
+        setAssignedTo(c.assigned_to ? String(c.assigned_to) : "");
         setInsurance(c.insurance_status);
         setPriority(c.client?.priority_level || "Normal");
         setMissingDocs(c.missing_documents || []);
@@ -62,19 +61,22 @@ export default function CaseDetail() {
 
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
-      await Promise.all([
-        updateIntakeCase(id, {
-          status,
-          assigned_to: assignedTo || null,
-          insurance_status: insuranceStatus,
-          missing_documents: missingDocs,
-          last_contact_date: lastContact || null,
-          next_follow_up_date: nextFollowUp || null,
-          notes,
-        }),
-        updateClient(caseData.client_id, { priority_level: priority }),
-      ]);
+      const savedCase = await updateIntakeCase(id, {
+        status,
+        assigned_to: assignedTo ? Number(assignedTo) : null,
+        insurance_status: insuranceStatus,
+        missing_documents: missingDocs,
+        last_contact_date: lastContact || null,
+        next_follow_up_date: nextFollowUp || null,
+        notes,
+      });
+
+      await updateClient(caseData.client_id, { priority_level: priority });
+
+      setCaseData(savedCase);
+      setAssignedTo(savedCase.assigned_to ? String(savedCase.assigned_to) : "");
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
@@ -105,7 +107,6 @@ export default function CaseDetail() {
 
   return (
     <div className="p-8 max-w-5xl">
-      {/* Header */}
       <div className="flex items-start justify-between mb-7">
         <div>
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-3 transition-colors">
@@ -140,7 +141,6 @@ export default function CaseDetail() {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {/* Left: Client Info */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Client Info</h3>
@@ -161,7 +161,6 @@ export default function CaseDetail() {
             </dl>
           </div>
 
-          {/* Missing Documents */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Missing Documents</h3>
             <div className="space-y-2">
@@ -184,30 +183,42 @@ export default function CaseDetail() {
           </div>
         </div>
 
-        {/* Right: Editable Fields */}
         <div className="col-span-2 space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Intake Status</h3>
             <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "Status", value: status, set: setStatus,
-                  opts: STATUSES },
-                { label: "Priority", value: priority, set: setPriority,
-                  opts: ["Low","Normal","High","Urgent"] },
-                { label: "Insurance Status", value: insuranceStatus, set: setInsurance,
-                  opts: ["Not Started","Pending","Verified","Issue Found"] },
-                { label: "Assigned To", value: assignedTo, set: setAssignedTo,
-                  opts: staff.map(s => s.name), isOptional: true },
-              ].map(({ label, value, set, opts, isOptional }) => (
-                <div key={label}>
-                  <label className="block text-xs font-medium text-slate-500 mb-1.5">{label}</label>
-                  <select value={value} onChange={e => set(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {isOptional && <option value="">Unassigned</option>}
-                    {opts.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-              ))}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
+                <select value={status} onChange={e => setStatus(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {STATUSES.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
+                <select value={priority} onChange={e => setPriority(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {["Low","Normal","High","Urgent"].map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Insurance Status</label>
+                <select value={insuranceStatus} onChange={e => setInsurance(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {["Not Started","Pending","Verified","Issue Found"].map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">Assigned To</label>
+                <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Unassigned</option>
+                  {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
             </div>
           </div>
 
