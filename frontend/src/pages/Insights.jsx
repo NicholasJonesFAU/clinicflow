@@ -111,30 +111,41 @@ export default function Insights() {
   }, []);
 
   if (loading) return <LoadingSpinner message="Analyzing operations…" />;
-  if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-lg m-8">Error: {error}</div>;
+
+  if (error) {
+    return (
+      <div className="p-4 sm:p-8 text-red-600 bg-red-50 rounded-lg m-4 sm:m-8">
+        Error: {error}
+      </div>
+    );
+  }
 
   const counts = { critical: 0, warning: 0, info: 0 };
   insights.forEach(i => { if (counts[i.severity] !== undefined) counts[i.severity]++; });
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       <div className="mb-7">
         <h1 className="text-2xl font-bold text-slate-800">Operational Insights</h1>
-        <p className="text-slate-500 text-sm mt-1">Rule-based analysis from current intake data</p>
+        <p className="text-slate-500 text-sm mt-1">
+          Rule-based analysis from current intake data
+        </p>
       </div>
 
       {insights.length > 0 && (
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-6">
           {counts.critical > 0 && (
             <span className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-1 rounded-full font-medium">
               {counts.critical} critical
             </span>
           )}
+
           {counts.warning > 0 && (
             <span className="bg-amber-50 border border-amber-200 text-amber-700 text-sm px-3 py-1 rounded-full font-medium">
               {counts.warning} warning{counts.warning > 1 ? "s" : ""}
             </span>
           )}
+
           {counts.info > 0 && (
             <span className="bg-blue-50 border border-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium">
               {counts.info} info
@@ -156,23 +167,32 @@ export default function Insights() {
             const Icon = TYPE_ICON[insight.type] || Lightbulb;
             const title = insight.title || TYPE_TITLE[insight.type] || "Operational Insight";
             const target = buildInsightLink(insight, staff);
+
             return (
               <button
                 key={i}
                 onClick={() => navigate(target)}
-                className={`w-full text-left rounded-xl border p-5 flex gap-4 transition-all hover:shadow-sm ${styles.card}`}
+                className={`w-full text-left rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row gap-4 transition-all hover:shadow-sm ${styles.card}`}
               >
-                <div className={`rounded-lg p-2.5 h-fit ${styles.icon}`}>
+                <div className={`rounded-lg p-2.5 h-fit w-fit shrink-0 ${styles.icon}`}>
                   <Icon size={18} />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <h3 className={`font-semibold text-sm ${styles.title}`}>{title}</h3>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start sm:items-center gap-2 mb-1.5 flex-wrap">
+                    <h3 className={`font-semibold text-sm ${styles.title}`}>
+                      {title}
+                    </h3>
+
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium capitalize ${styles.badge}`}>
                       {insight.severity}
                     </span>
                   </div>
-                  <p className={`text-sm leading-relaxed ${styles.msg}`}>{insight.message}</p>
+
+                  <p className={`text-sm leading-relaxed ${styles.msg}`}>
+                    {insight.message}
+                  </p>
+
                   <span className={`inline-flex items-center gap-1 mt-3 text-xs font-semibold ${styles.link}`}>
                     View matching cases <ArrowRight size={13} />
                   </span>
@@ -183,7 +203,7 @@ export default function Insights() {
         </div>
       )}
 
-      <p className="mt-8 text-xs text-slate-400 border-t border-slate-100 pt-4">
+      <p className="mt-8 text-xs text-slate-400 border-t border-slate-100 pt-4 leading-relaxed">
         Insights are generated from rule-based logic using live data. Click an insight to view the matching intake cases.
       </p>
     </div>

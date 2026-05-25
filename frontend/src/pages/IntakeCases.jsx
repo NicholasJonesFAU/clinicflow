@@ -220,8 +220,8 @@ export default function IntakeCases() {
   if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-lg m-8">Error: {error}</div>;
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-7">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-7">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Intake Cases</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -230,7 +230,7 @@ export default function IntakeCases() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-700 transition-colors w-full sm:w-auto"
         >
           <Plus size={16} />
           New Intake Case
@@ -400,13 +400,13 @@ export default function IntakeCases() {
       )}
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap gap-3 items-center">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center">
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
             <input
               type="text" placeholder="Search client…" value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm w-44 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm w-full sm:w-44 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -433,13 +433,13 @@ export default function IntakeCases() {
             </button>
           )}
 
-          <span className="ml-auto text-xs text-slate-400">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
+          <span className="sm:ml-auto text-xs text-slate-400">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
         </div>
 
         {filtered.length === 0 ? (
           <EmptyState title="No cases found" message="Try adjusting your search or filters, or create a new intake case." />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-b-xl">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-slate-400 border-b border-slate-100 uppercase tracking-wide">

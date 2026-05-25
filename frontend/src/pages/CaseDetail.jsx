@@ -97,7 +97,15 @@ export default function CaseDetail() {
   };
 
   if (loading) return <LoadingSpinner message="Loading case…" />;
-  if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-lg m-8">Error: {error}</div>;
+
+  if (error) {
+    return (
+      <div className="p-4 sm:p-8 text-red-600 bg-red-50 rounded-lg m-4 sm:m-8">
+        Error: {error}
+      </div>
+    );
+  }
+
   if (!caseData) return null;
 
   const { client } = caseData;
@@ -106,44 +114,57 @@ export default function CaseDetail() {
     (Date.now() - new Date(caseData.updated_at)) / 86400000 > 7;
 
   return (
-    <div className="p-8 max-w-5xl">
-      <div className="flex items-start justify-between mb-7">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-7">
         <div>
-          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-3 transition-colors">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-600 text-sm mb-3 transition-colors"
+          >
             <ArrowLeft size={15} /> Back
           </button>
+
           <h1 className="text-2xl font-bold text-slate-800">
             {client?.first_name} {client?.last_name}
           </h1>
+
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <StatusBadge status={status} />
             <PriorityBadge priority={priority} />
             <InsuranceBadge status={insuranceStatus} />
             {isOverdue && <span className="bg-red-50 text-red-600 text-xs px-2 py-0.5 rounded-full border border-red-100 font-medium">Overdue</span>}
-            {isStuck   && <span className="bg-purple-50 text-purple-600 text-xs px-2 py-0.5 rounded-full border border-purple-100 font-medium">Stuck</span>}
+            {isStuck && <span className="bg-purple-50 text-purple-600 text-xs px-2 py-0.5 rounded-full border border-purple-100 font-medium">Stuck</span>}
           </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={handleDelete}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
+
+        <div className="flex flex-col-reverse sm:flex-row gap-2 w-full lg:w-auto">
+          <button
+            onClick={handleDelete}
+            className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+          >
             <Trash2 size={15} /> Delete
           </button>
-          <button onClick={handleSave} disabled={saving}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
               saved
                 ? "bg-green-100 text-green-700 border border-green-200"
                 : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-            }`}>
+            }`}
+          >
             <Save size={15} />
             {saving ? "Saving…" : saved ? "Saved!" : "Save Changes"}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
             <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Client Info</h3>
+
             <dl className="space-y-3 text-sm">
               {[
                 ["Date of Birth",    client?.date_of_birth],
@@ -155,66 +176,92 @@ export default function CaseDetail() {
               ].map(([label, val]) => (
                 <div key={label} className="flex flex-col gap-0.5">
                   <dt className="text-slate-400 text-xs font-medium">{label}</dt>
-                  <dd className="text-slate-700">{val}</dd>
+                  <dd className="text-slate-700 break-words">{val}</dd>
                 </div>
               ))}
             </dl>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
             <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Missing Documents</h3>
+
             <div className="space-y-2">
               {DOC_OPTIONS.map(doc => {
                 const missing = missingDocs.includes(doc);
+
                 return (
-                  <button key={doc} onClick={() => toggleDoc(doc)}
+                  <button
+                    key={doc}
+                    onClick={() => toggleDoc(doc)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                      missing ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100"
-                    }`}>
-                    {missing ? <CheckSquare size={15} className="text-amber-500 shrink-0" /> : <Square size={15} className="text-slate-300 shrink-0" />}
+                      missing
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100"
+                    }`}
+                  >
+                    {missing
+                      ? <CheckSquare size={15} className="text-amber-500 shrink-0" />
+                      : <Square size={15} className="text-slate-300 shrink-0" />
+                    }
                     {doc}
                   </button>
                 );
               })}
             </div>
+
             {missingDocs.length > 0 && (
-              <p className="text-xs text-amber-600 mt-2.5">{missingDocs.length} document{missingDocs.length > 1 ? "s" : ""} missing</p>
+              <p className="text-xs text-amber-600 mt-2.5">
+                {missingDocs.length} document{missingDocs.length > 1 ? "s" : ""} missing
+              </p>
             )}
           </div>
         </div>
 
-        <div className="col-span-2 space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
             <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Intake Status</h3>
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">Status</label>
-                <select value={status} onChange={e => setStatus(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   {STATUSES.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
-                <select value={priority} onChange={e => setPriority(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={priority}
+                  onChange={e => setPriority(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   {["Low","Normal","High","Urgent"].map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">Insurance Status</label>
-                <select value={insuranceStatus} onChange={e => setInsurance(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={insuranceStatus}
+                  onChange={e => setInsurance(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   {["Not Started","Pending","Verified","Issue Found"].map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">Assigned To</label>
-                <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={assignedTo}
+                  onChange={e => setAssignedTo(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="">Unassigned</option>
                   {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -222,26 +269,34 @@ export default function CaseDetail() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
             <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Follow-up Dates</h3>
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 { label: "Last Contact Date",    value: lastContact,   set: setLastContact },
                 { label: "Next Follow-up Date",  value: nextFollowUp,  set: setNextFollowUp },
               ].map(({ label, value, set }) => (
                 <div key={label}>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5">{label}</label>
-                  <input type="date" value={value} onChange={e => set(e.target.value)}
+                  <input
+                    type="date"
+                    value={value}
+                    onChange={e => set(e.target.value)}
                     className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      label === "Next Follow-up Date" && isOverdue ? "border-red-300 bg-red-50 text-red-700" : "border-slate-200 text-slate-700"
-                    }`} />
+                      label === "Next Follow-up Date" && isOverdue
+                        ? "border-red-300 bg-red-50 text-red-700"
+                        : "border-slate-200 text-slate-700"
+                    }`}
+                  />
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
             <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Notes</h3>
+
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
